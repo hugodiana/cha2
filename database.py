@@ -8,9 +8,9 @@ SECRETS_FILE = 'credentials.json'  # coloque o arquivo JSON da conta de serviço
 SHEET_NAME = 'ChaDeBebe'  # nome da sua planilha no Google Sheets
 
 def connect_to_sheet():
-    creds = Credentials.from_service_account_file(SECRETS_FILE, scopes=SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open(SHEET_NAME).sheet1
+    gc = gspread.service_account(filename='credentials.json')
+    # Substitua pelo nome exato da sua planilha
+    sheet = gc.open("ChaDeBebe")
     return sheet
 
 def fetch_all_users(sheet):
