@@ -33,16 +33,17 @@ def connect_to_sheet():
 
         creds = Credentials.from_service_account_info(credentials_info, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open(SHEET_NAME)
-        return sheet
+        spreadsheet = client.open(SHEET_NAME)
+        worksheet = spreadsheet.get_worksheet(0)  # seleciona a primeira aba
+        return worksheet
 
     except Exception as e:
         st.error(f"Erro ao conectar à planilha: {e}")
         return None
 
-def fetch_all_users(sheet):
+def fetch_all_users(worksheet):
     try:
-        records = sheet.get_all_records()
+        records = worksheet.get_all_records()
         df = pd.DataFrame(records)
         if 'username' not in df.columns:
             return pd.DataFrame(columns=['username', 'email', 'name', 'password'])
@@ -51,18 +52,18 @@ def fetch_all_users(sheet):
         st.error(f"Erro ao buscar usuários: {e}")
         return pd.DataFrame(columns=['username', 'email', 'name', 'password'])
 
-def update_users(sheet, users_df):
+def update_users(worksheet, users_df):
     try:
-        sheet.clear()
-        sheet.update([users_df.columns.values.tolist()] + users_df.values.tolist())
+        worksheet.clear()
+        worksheet.update([users_df.columns.values.tolist()] + users_df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao atualizar usuários: {e}")
         return False
 
-def get_evento_atual(sheet, username):
+def get_evento_atual(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         user_evento = df[df['username'] == username]
         if user_evento.empty:
             return {}
@@ -76,9 +77,9 @@ def get_evento_atual(sheet, username):
         st.error(f"Erro ao buscar evento: {e}")
         return {}
 
-def set_evento_atual(sheet, username, evento_data):
+def set_evento_atual(worksheet, username, evento_data):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         if df.empty:
             df = pd.DataFrame(columns=["username","nome_bebe","sexo_bebe","data_cha","email","name","password"])
 
@@ -90,7 +91,7 @@ def set_evento_atual(sheet, username, evento_data):
                 "nome_bebe": evento_data.get("nome_bebe", ""),
                 "sexo_bebe": evento_data.get("sexo_bebe", ""),
                 "data_cha": evento_data.get("data_cha", ""),
-                "email": "",  
+                "email": "",
                 "name": "",
                 "password": "",
             }
@@ -101,18 +102,16 @@ def set_evento_atual(sheet, username, evento_data):
             df.at[i, "sexo_bebe"] = evento_data.get("sexo_bebe", "")
             df.at[i, "data_cha"] = evento_data.get("data_cha", "")
 
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar evento: {e}")
         return False
 
-
-# === Convidados ===
-def get_convidados(sheet, username):
+def get_convidados(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         convidados_str = df.loc[df['username'] == username, 'convidados'].values
         if convidados_str.size == 0 or not convidados_str[0]:
             return []
@@ -121,9 +120,9 @@ def get_convidados(sheet, username):
         st.error(f"Erro ao obter convidados: {e}")
         return []
 
-def set_convidados(sheet, username, convidados_list):
+def set_convidados(worksheet, username, convidados_list):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         if df.empty:
             df = pd.DataFrame(columns=["username", "convidados"])
         idx = df.index[df['username'] == username].tolist()
@@ -134,17 +133,16 @@ def set_convidados(sheet, username, convidados_list):
         else:
             i = idx[0]
             df.at[i, "convidados"] = convidados_str
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar convidados: {e}")
         return False
 
-# === Checklist ===
-def get_checklist(sheet, username):
+def get_checklist(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         tarefas_str = df.loc[df['username'] == username, 'checklist_tarefas'].values
         status_str = df.loc[df['username'] == username, 'checklist_status'].values
         tarefas = tarefas_str[0].split(';') if tarefas_str.size > 0 and tarefas_str[0] else []
@@ -154,9 +152,9 @@ def get_checklist(sheet, username):
         st.error(f"Erro ao obter checklist: {e}")
         return [], []
 
-def set_checklist(sheet, username, tarefas, status):
+def set_checklist(worksheet, username, tarefas, status):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         tarefas_str = ';'.join(tarefas)
         status_str = ';'.join(map(str, status))
         idx = df.index[df['username'] == username].tolist()
@@ -167,26 +165,25 @@ def set_checklist(sheet, username, tarefas, status):
             i = idx[0]
             df.at[i, "checklist_tarefas"] = tarefas_str
             df.at[i, "checklist_status"] = status_str
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar checklist: {e}")
         return False
 
-# === Gastos ===
-def get_orcamento(sheet, username):
+def get_orcamento(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         orcamento = df.loc[df['username'] == username, 'orcamento'].values
         return float(orcamento[0]) if orcamento.size > 0 and orcamento[0] else 0.0
     except Exception as e:
         st.error(f"Erro ao obter orçamento: {e}")
         return 0.0
 
-def set_orcamento(sheet, username, orcamento):
+def set_orcamento(worksheet, username, orcamento):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         idx = df.index[df['username'] == username].tolist()
         if not idx:
             nova_linha = {"username": username, "orcamento": orcamento}
@@ -194,16 +191,16 @@ def set_orcamento(sheet, username, orcamento):
         else:
             i = idx[0]
             df.at[i, "orcamento"] = orcamento
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar orçamento: {e}")
         return False
 
-def get_gastos(sheet, username):
+def get_gastos(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         gastos_str = df.loc[df['username'] == username, 'gastos'].values
         if gastos_str.size == 0 or not gastos_str[0]:
             return pd.DataFrame(columns=['descricao', 'valor', 'forma_pagamento'])
@@ -212,9 +209,9 @@ def get_gastos(sheet, username):
         st.error(f"Erro ao obter gastos: {e}")
         return pd.DataFrame(columns=['descricao', 'valor', 'forma_pagamento'])
 
-def set_gastos(sheet, username, gastos_df):
+def set_gastos(worksheet, username, gastos_df):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         gastos_json = gastos_df.to_json(orient='records')
         idx = df.index[df['username'] == username].tolist()
         if not idx:
@@ -223,17 +220,16 @@ def set_gastos(sheet, username, gastos_df):
         else:
             i = idx[0]
             df.at[i, "gastos"] = gastos_json
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar gastos: {e}")
         return False
 
-# === Presentes ===
-def get_presentes(sheet, username):
+def get_presentes(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         presentes_str = df.loc[df['username'] == username, 'presentes'].values
         if presentes_str.size == 0 or not presentes_str[0]:
             return pd.DataFrame(columns=['convidado', 'presente', 'agradecimento_enviado'])
@@ -242,9 +238,9 @@ def get_presentes(sheet, username):
         st.error(f"Erro ao obter presentes: {e}")
         return pd.DataFrame(columns=['convidado', 'presente', 'agradecimento_enviado'])
 
-def set_presentes(sheet, username, presentes_df):
+def set_presentes(worksheet, username, presentes_df):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         presentes_json = presentes_df.to_json(orient='records')
         idx = df.index[df['username'] == username].tolist()
         if not idx:
@@ -253,17 +249,16 @@ def set_presentes(sheet, username, presentes_df):
         else:
             i = idx[0]
             df.at[i, "presentes"] = presentes_json
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar presentes: {e}")
         return False
 
-# === Sugestões ===
-def get_sugestoes(sheet, username):
+def get_sugestoes(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         sugestoes_str = df.loc[df['username'] == username, 'sugestoes'].values
         if sugestoes_str.size == 0 or not sugestoes_str[0]:
             return pd.DataFrame(columns=['item', 'detalhes'])
@@ -272,9 +267,9 @@ def get_sugestoes(sheet, username):
         st.error(f"Erro ao obter sugestões: {e}")
         return pd.DataFrame(columns=['item', 'detalhes'])
 
-def set_sugestoes(sheet, username, sugestoes_df):
+def set_sugestoes(worksheet, username, sugestoes_df):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         sugestoes_json = sugestoes_df.to_json(orient='records')
         idx = df.index[df['username'] == username].tolist()
         if not idx:
@@ -283,17 +278,16 @@ def set_sugestoes(sheet, username, sugestoes_df):
         else:
             i = idx[0]
             df.at[i, "sugestoes"] = sugestoes_json
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar sugestões: {e}")
         return False
 
-# === Brincadeiras ===
-def get_brincadeiras(sheet, username):
+def get_brincadeiras(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         brincadeiras_str = df.loc[df['username'] == username, 'brincadeiras'].values
         if brincadeiras_str.size == 0 or not brincadeiras_str[0]:
             return pd.DataFrame(columns=['nome', 'regras'])
@@ -302,9 +296,9 @@ def get_brincadeiras(sheet, username):
         st.error(f"Erro ao obter brincadeiras: {e}")
         return pd.DataFrame(columns=['nome', 'regras'])
 
-def set_brincadeiras(sheet, username, brincadeiras_df):
+def set_brincadeiras(worksheet, username, brincadeiras_df):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         brincadeiras_json = brincadeiras_df.to_json(orient='records')
         idx = df.index[df['username'] == username].tolist()
         if not idx:
@@ -313,17 +307,16 @@ def set_brincadeiras(sheet, username, brincadeiras_df):
         else:
             i = idx[0]
             df.at[i, "brincadeiras"] = brincadeiras_json
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        worksheet.clear()
+        worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao salvar brincadeiras: {e}")
         return False
 
-# === Resetar tudo ===
-def reset_all_data_for_user(sheet, username):
+def reset_all_data_for_user(worksheet, username):
     try:
-        df = pd.DataFrame(sheet.get_all_records())
+        df = pd.DataFrame(worksheet.get_all_records())
         idx = df.index[df['username'] == username].tolist()
         if idx:
             i = idx[0]
@@ -331,8 +324,8 @@ def reset_all_data_for_user(sheet, username):
             for col in df.columns:
                 if col not in ['username', 'email', 'name', 'password']:
                     df.at[i, col] = "" if df[col].dtype == object else 0
-            sheet.clear()
-            sheet.update([df.columns.values.tolist()] + df.values.tolist())
+            worksheet.clear()
+            worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
     except Exception as e:
         st.error(f"Erro ao resetar dados: {e}")
