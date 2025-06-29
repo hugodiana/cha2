@@ -62,8 +62,8 @@ try:
     if authentication_status == None:
         st.warning('Por favor, digite seu usuário e senha para entrar, ou registre-se abaixo.')
         try:
-            if authenticator.register_user("Registrar Novo Usuário", pre_authorization=False):
-       
+            if authenticator.register_user("Registrar Novo Usuário", preauthorization=False):
+                     
                 new_users_list = []
                 if 'credentials' in config and 'usernames' in config['credentials']:
                     for uname, details in config['credentials']['usernames'].items():
