@@ -6,25 +6,20 @@ import database
 
 st.set_page_config(page_title="Organizador de Chá de Bebê", layout="wide")
 
-def hash_passwords(passwords):
-    """Gera hashes das senhas para armazenar."""
-    hasher = stauth.Hasher(passwords)
-    return hasher.generate()
+def try_rerun():
+    try:
+        st.experimental_rerun()
+    except AttributeError:
+        # fallback caso experimental_rerun não exista
+        st.experimental_singleton.clear()
+        st.experimental_memo.clear()
+        st.stop()
 
 try:
     # Conecta planilha e busca usuários
     sheet = database.connect_to_sheet()
     users_df = database.fetch_all_users(sheet)
-    users_dict = {}
-
-    # Prepara dicionário para autenticação
-    if not users_df.empty:
-        for _, row in users_df.iterrows():
-            users_dict[row['username']] = {
-                'name': row['name'],
-                'email': row['email'],
-                'password': row['password']
-            }
+    users_dict = users_df.set_index('username').to_dict('index') if not users_df.empty else {}
 
     config = {
         'credentials': {'usernames': users_dict},
@@ -45,48 +40,19 @@ try:
 
     elif authentication_status is None:
         st.warning('Por favor, digite seu usuário e senha para entrar, ou registre-se abaixo.')
-
-        # Formulário de registro customizado para poder pegar a senha em texto plano
-        with st.form("registro_form"):
-            new_username = st.text_input("Usuário")
-            new_name = st.text_input("Nome")
-            new_email = st.text_input("Email")
-            new_password = st.text_input("Senha", type="password")
-            confirmar_senha = st.text_input("Confirme a senha", type="password")
-            submit_button = st.form_submit_button("Registrar")
-
-        if submit_button:
-            if not new_username or not new_password or not new_name or not new_email:
-                st.error("Preencha todos os campos.")
-            elif new_password != confirmar_senha:
-                st.error("As senhas não coincidem.")
-            elif new_username in users_dict:
-                st.error("Usuário já existe.")
-            else:
-                # Gerar hash da senha
-                hashed_pwd = hash_passwords([new_password])[0]
-
-                # Adicionar novo usuário no dict
-                users_dict[new_username] = {
-                    'name': new_name,
-                    'email': new_email,
-                    'password': hashed_pwd
-                }
-
-                # Atualizar planilha
+        try:
+            if authenticator.register_user("Registrar Novo Usuário", preauthorization=False):
                 new_users_list = []
-                for uname, details in users_dict.items():
+                for uname, details in config['credentials']['usernames'].items():
                     details['username'] = uname
                     new_users_list.append(details)
                 new_users_df = pd.DataFrame(new_users_list)
-                final_users_df = new_users_df[['username', 'email', 'name', 'password']]
-                success = database.update_users(sheet, final_users_df)
-
-                if success:
-                    st.success("Usuário registrado com sucesso! Faça login com suas credenciais.")
-                    st.experimental_rerun()
-                else:
-                    st.error("Erro ao salvar usuário.")
+                if not new_users_df.empty:
+                    final_users_df = new_users_df[['username', 'email', 'name', 'password']]
+                    database.update_users(sheet, final_users_df)
+                st.success('Usuário registrado com sucesso! Por favor, faça o login com suas novas credenciais.')
+        except Exception as e:
+            st.error(f"Erro no registro: {e}")
 
     else:
         st.sidebar.write(f'Bem-vindo(a) **{name}**!')
@@ -100,14 +66,14 @@ try:
                 hoje = datetime.today().date()
                 dias_restantes = (data_evento - hoje).days
                 if dias_restantes >= 0:
-                    st.success(f"⏳ Faltam {dias_restantes} dia(s) para o grande dia!")
+                    st.success(f"\u23F3 Faltam {dias_restantes} dia(s) para o grande dia!")
                 else:
-                    st.warning("📅 A data do chá já passou.")
+                    st.warning("\ud83d\uddd3\ufe0f A data do chá já passou.")
             except Exception:
                 pass
 
         if not evento or not isinstance(evento, dict) or not evento.get('nome_bebe'):
-            st.header("✨ Vamos configurar seu chá de bebê!")
+            st.header("\u2728 Vamos configurar seu chá de bebê!")
             with st.form("form_evento"):
                 nome_bebe = st.text_input("Nome do bebê:")
                 sexo_bebe = st.selectbox("Sexo do bebê:", ["Menina", "Menino", "Prefiro não informar"])
@@ -125,31 +91,57 @@ try:
                         }
                         database.set_evento_atual(sheet, username, evento_data)
                         st.success("Evento salvo!")
-                        st.experimental_rerun()
+                        try_rerun()
 
         else:
             nomes_bebes = evento.get('nome_bebe', '')
-            st.title(f"👶 Chá de Bebê de {nomes_bebes}")
+            st.title(f"\ud83d\udc76 Chá de Bebê de {nomes_bebes}")
             st.divider()
 
             paginas = [
-                "📅 Painel Principal", "👥 Convidados", "✅ Checklist", "💸 Gastos",
-                "🏳️ Presentes", "💡 Sugestões", "🎲 Brincadeiras", "⚙️ Configurações"
+                "\ud83d\uddd3\ufe0f Painel Principal", "\ud83d\udc65 Convidados", "\u2705 Checklist", "\ud83d\udcb8 Gastos",
+                "\ud83c\udff1 Presentes", "\ud83d\udca1 Sugestões", "\ud83c\udfb2 Brincadeiras", "\u2699\ufe0f Configurações"
             ]
             pagina = st.sidebar.radio("Ir para:", paginas)
 
-            # Você pode implementar as páginas aqui conforme seu código
+            if pagina == "\ud83d\uddd3\ufe0f Painel Principal":
+                # Conteúdo da página principal
+                pass
 
-            if pagina == "⚙️ Configurações":
-                st.header("⚙️ Configurações")
-                st.warning("⚠️ Apagar todos os dados do evento.")
+            elif pagina == "\ud83d\udc65 Convidados":
+                # Conteúdo convidados
+                pass
+
+            elif pagina == "\u2705 Checklist":
+                # Conteúdo checklist
+                pass
+
+            elif pagina == "\ud83d\udcb8 Gastos":
+                # Conteúdo gastos
+                pass
+
+            elif pagina == "\ud83c\udff1 Presentes":
+                # Conteúdo presentes
+                pass
+
+            elif pagina == "\ud83d\udca1 Sugestões":
+                # Conteúdo sugestões
+                pass
+
+            elif pagina == "\ud83c\udfb2 Brincadeiras":
+                # Conteúdo brincadeiras
+                pass
+
+            elif pagina == "\u2699\ufe0f Configurações":
+                st.header("\u2699\ufe0f Configurações")
+                st.warning("\u26a0\ufe0f Apagar todos os dados do evento.")
                 confirm = st.checkbox("Confirmo apagar todos os dados.")
                 if confirm:
                     if st.button("Apagar e reiniciar"):
                         try:
                             database.reset_all_data_for_user(sheet, username)
                             st.success("Dados apagados! Redirecionando...")
-                            st.experimental_rerun()
+                            try_rerun()
                         except Exception as e:
                             st.error(f"Erro ao apagar dados: {e}")
 
