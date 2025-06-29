@@ -54,6 +54,7 @@ def fetch_all_users(worksheet):
 
 def update_users(worksheet, users_df):
     try:
+        users_df = users_df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([users_df.columns.values.tolist()] + users_df.values.tolist())
         return True
@@ -102,6 +103,7 @@ def set_evento_atual(worksheet, username, evento_data):
             df.at[i, "sexo_bebe"] = evento_data.get("sexo_bebe", "")
             df.at[i, "data_cha"] = evento_data.get("data_cha", "")
 
+        df = df.fillna("")  # evita NaN antes de salvar
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -133,6 +135,7 @@ def set_convidados(worksheet, username, convidados_list):
         else:
             i = idx[0]
             df.at[i, "convidados"] = convidados_str
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -165,6 +168,7 @@ def set_checklist(worksheet, username, tarefas, status):
             i = idx[0]
             df.at[i, "checklist_tarefas"] = tarefas_str
             df.at[i, "checklist_status"] = status_str
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -191,6 +195,7 @@ def set_orcamento(worksheet, username, orcamento):
         else:
             i = idx[0]
             df.at[i, "orcamento"] = orcamento
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -220,6 +225,7 @@ def set_gastos(worksheet, username, gastos_df):
         else:
             i = idx[0]
             df.at[i, "gastos"] = gastos_json
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -249,6 +255,7 @@ def set_presentes(worksheet, username, presentes_df):
         else:
             i = idx[0]
             df.at[i, "presentes"] = presentes_json
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -278,6 +285,7 @@ def set_sugestoes(worksheet, username, sugestoes_df):
         else:
             i = idx[0]
             df.at[i, "sugestoes"] = sugestoes_json
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -307,6 +315,7 @@ def set_brincadeiras(worksheet, username, brincadeiras_df):
         else:
             i = idx[0]
             df.at[i, "brincadeiras"] = brincadeiras_json
+        df = df.fillna("")  # evita NaN
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
@@ -324,6 +333,7 @@ def reset_all_data_for_user(worksheet, username):
             for col in df.columns:
                 if col not in ['username', 'email', 'name', 'password']:
                     df.at[i, col] = "" if df[col].dtype == object else 0
+            df = df.fillna("")  # evita NaN
             worksheet.clear()
             worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True

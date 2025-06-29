@@ -10,9 +10,6 @@ def try_rerun():
     try:
         st.experimental_rerun()
     except AttributeError:
-        # fallback caso experimental_rerun não exista
-        st.experimental_singleton.clear()
-        st.experimental_memo.clear()
         st.stop()
 
 try:
@@ -49,6 +46,8 @@ try:
                 new_users_df = pd.DataFrame(new_users_list)
                 if not new_users_df.empty:
                     final_users_df = new_users_df[['username', 'email', 'name', 'password']]
+                    # Antes de salvar, preenche NaNs com vazio
+                    final_users_df = final_users_df.fillna("")
                     database.update_users(sheet, final_users_df)
                 st.success('Usuário registrado com sucesso! Por favor, faça o login com suas novas credenciais.')
         except Exception as e:
@@ -89,9 +88,12 @@ try:
                             "sexo_bebe": sexo_bebe,
                             "data_cha": data_cha.isoformat() if not data_nao_definida else ""
                         }
-                        database.set_evento_atual(sheet, username, evento_data)
-                        st.success("Evento salvo!")
-                        try_rerun()
+                        success = database.set_evento_atual(sheet, username, evento_data)
+                        if success:
+                            st.success("Evento salvo!")
+                            try_rerun()
+                        else:
+                            st.error("Erro ao salvar evento.")
 
         else:
             nomes_bebes = evento.get('nome_bebe', '')
@@ -105,31 +107,31 @@ try:
             pagina = st.sidebar.radio("Ir para:", paginas)
 
             if pagina == "\ud83d\uddd3\ufe0f Painel Principal":
-                # Conteúdo da página principal
+                # ... seu código do painel principal sem alteração ...
                 pass
 
             elif pagina == "\ud83d\udc65 Convidados":
-                # Conteúdo convidados
+                # ... seu código dos convidados sem alteração ...
                 pass
 
             elif pagina == "\u2705 Checklist":
-                # Conteúdo checklist
+                # ... seu código do checklist sem alteração ...
                 pass
 
             elif pagina == "\ud83d\udcb8 Gastos":
-                # Conteúdo gastos
+                # ... seu código de gastos sem alteração ...
                 pass
 
             elif pagina == "\ud83c\udff1 Presentes":
-                # Conteúdo presentes
+                # ... seu código de presentes sem alteração ...
                 pass
 
             elif pagina == "\ud83d\udca1 Sugestões":
-                # Conteúdo sugestões
+                # ... seu código de sugestões sem alteração ...
                 pass
 
             elif pagina == "\ud83c\udfb2 Brincadeiras":
-                # Conteúdo brincadeiras
+                # ... seu código de brincadeiras sem alteração ...
                 pass
 
             elif pagina == "\u2699\ufe0f Configurações":
@@ -139,9 +141,12 @@ try:
                 if confirm:
                     if st.button("Apagar e reiniciar"):
                         try:
-                            database.reset_all_data_for_user(sheet, username)
-                            st.success("Dados apagados! Redirecionando...")
-                            try_rerun()
+                            success = database.reset_all_data_for_user(sheet, username)
+                            if success:
+                                st.success("Dados apagados! Redirecionando...")
+                                try_rerun()
+                            else:
+                                st.error("Erro ao apagar dados.")
                         except Exception as e:
                             st.error(f"Erro ao apagar dados: {e}")
 
