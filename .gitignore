@@ -22,3 +22,6 @@ build/
 *.log
 *.txt
 *.env
+
+cha-de-bebe-app-16d9e551ec7a.json
+credentials.json
