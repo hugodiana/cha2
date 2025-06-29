@@ -53,14 +53,8 @@ try:
     )
 
     # --- 2. TELA DE LOGIN / CADASTRO ---
-    name, authentication_status, username = authenticator.login(
-        fields={
-            'form_name': 'Acessar Organizador', 
-            'username': 'Usuário', 
-            'password': 'Senha', 
-            'login': 'Entrar'
-        }
-    )
+    name, authentication_status, username = authenticator.login("Acessar Organizador", "main")
+ 
 
     if authentication_status == False: 
         st.error('Usuário ou senha incorreto.')
@@ -68,18 +62,8 @@ try:
     if authentication_status == None:
         st.warning('Por favor, digite seu usuário e senha para entrar, ou registre-se abaixo.')
         try:
-            if authenticator.register_user(
-                fields={
-                    'form_name': 'Registrar Novo Usuário',
-                    'username': 'Usuário desejado',
-                    'name': 'Seu Nome Completo',
-                    'email': 'Seu Email',
-                    'password': 'Senha',
-                    'repeat_password': 'Repita a Senha',
-                    'register': 'Registrar'
-                },
-                pre_authorization=False 
-            ): 
+            if authenticator.register_user("Registrar Novo Usuário", pre_authorization=False):
+       
                 new_users_list = []
                 if 'credentials' in config and 'usernames' in config['credentials']:
                     for uname, details in config['credentials']['usernames'].items():
