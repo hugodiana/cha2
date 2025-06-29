@@ -51,8 +51,8 @@ try:
 
         evento = database.get_evento_atual(sheet, username)
 
-        # Contador dias restantes se houver data
-        if evento and evento.get('data_cha'):
+        # >>>>> Ajuste na verificação do evento e exibição do contador
+        if evento and isinstance(evento, dict) and evento.get('data_cha'):
             try:
                 data_evento = datetime.fromisoformat(evento['data_cha']).date()
                 hoje = datetime.today().date()
@@ -61,11 +61,11 @@ try:
                     st.success(f"⏳ Faltam {dias_restantes} dia(s) para o grande dia!")
                 else:
                     st.warning("📅 A data do chá já passou.")
-            except:
+            except Exception:
                 pass
 
-        # Tela inicial para cadastro do chá (se não tiver nome do bebê)
-        if not evento or not evento.get('nome_bebe'):
+        # >>>>> Mostrar formulário se não houver evento ou nome do bebê
+        if not evento or not isinstance(evento, dict) or not evento.get('nome_bebe'):
             st.header("✨ Vamos configurar seu chá de bebê!")
             with st.form("form_evento"):
                 nome_bebe = st.text_input("Nome do bebê:")
@@ -90,6 +90,8 @@ try:
             nomes_bebes = evento.get('nome_bebe', '')
             st.title(f"👶 Chá de Bebê de {nomes_bebes}")
             st.divider()
+
+            # ... o restante do seu código continua igual sem alterações ...
 
             paginas = [
                 "🗓️ Painel Principal", "👥 Convidados", "✅ Checklist", "💸 Gastos",
