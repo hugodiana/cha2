@@ -44,9 +44,13 @@ def connect_to_sheet():
 def fetch_all_users(worksheet):
     try:
         records = worksheet.get_all_records()
-        df = pd.DataFrame(records)
-        if 'username' not in df.columns:
+        if not records:
             return pd.DataFrame(columns=['username', 'email', 'name', 'password'])
+        df = pd.DataFrame(records)
+        # Garantir que as colunas esperadas existam
+        for col in ['username', 'email', 'name', 'password']:
+            if col not in df.columns:
+                df[col] = ""
         return df[['username', 'email', 'name', 'password']]
     except Exception as e:
         st.error(f"Erro ao buscar usuários: {e}")
@@ -64,7 +68,12 @@ def update_users(worksheet, users_df):
 
 def get_evento_atual(worksheet, username):
     try:
-        df = pd.DataFrame(worksheet.get_all_records())
+        records = worksheet.get_all_records()
+        if not records:
+            return {}
+        df = pd.DataFrame(records)
+        if 'username' not in df.columns:
+            return {}
         user_evento = df[df['username'] == username]
         if user_evento.empty:
             return {}
@@ -80,8 +89,15 @@ def get_evento_atual(worksheet, username):
 
 def set_evento_atual(worksheet, username, evento_data):
     try:
-        df = pd.DataFrame(worksheet.get_all_records())
-        if df.empty:
+        records = worksheet.get_all_records()
+        if not records:
+            # Planilha vazia: criar DataFrame inicial
+            df = pd.DataFrame(columns=["username","nome_bebe","sexo_bebe","data_cha","email","name","password"])
+        else:
+            df = pd.DataFrame(records)
+
+        if 'username' not in df.columns:
+            # Caso colunas não existam (planilha nova e vazia)
             df = pd.DataFrame(columns=["username","nome_bebe","sexo_bebe","data_cha","email","name","password"])
 
         idx = df.index[df['username'] == username].tolist()
@@ -103,7 +119,7 @@ def set_evento_atual(worksheet, username, evento_data):
             df.at[i, "sexo_bebe"] = evento_data.get("sexo_bebe", "")
             df.at[i, "data_cha"] = evento_data.get("data_cha", "")
 
-        df = df.fillna("")  # evita NaN antes de salvar
+        df = df.fillna("")
         worksheet.clear()
         worksheet.update([df.columns.values.tolist()] + df.values.tolist())
         return True
