@@ -1,0 +1,15 @@
+[theme]
+# Cor principal para botões, sliders, etc. (Rosa claro)
+primaryColor="#FF8FAB"
+
+# Cor de fundo principal da aplicação (Branco "sujo")
+backgroundColor="#FFF8F6"
+
+# Cor de fundo de elementos secundários, como a barra lateral (Pêssego suave)
+secondaryBackgroundColor="#FDE6E0"
+
+# Cor do texto principal (Cinza escuro para boa leitura)
+textColor="#31333F"
+
+# Fonte padrão
+font="sans serif"
